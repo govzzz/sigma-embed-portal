@@ -84,19 +84,26 @@ export function accountTypeFor(permissions) {
 // to production and staging; an embed only works where CLIENT_ID was issued.
 const DEFAULT_APP_HOSTS = ['app.sigmacomputing.com', 'staging.sigmacomputing.io'];
 const envList = (name) => (process.env[name] || '').split(',').map((s) => s.trim().replace(/^\/+|\/+$/g, '')).filter(Boolean);
-const orText = (list) => (list.length > 1 ? `${list.slice(0, -1).join(', ')} or ${list[list.length - 1]}` : list[0]);
+// SIGMA_ORG should be the bare slug, but a pasted org URL
+// (https://staging.sigmacomputing.io/my-org or a full workbook link) is
+// reduced to its first path segment so it still matches.
+const orgSlug = (s) => {
+  const m = s.match(/^(?:https?:\/\/)?[^/]*\.[^/]+\/([^/?#]+)/i);
+  return (m ? m[1] : s).toLowerCase();
+};
+const orText =(list) => (list.length > 1 ? `${list.slice(0, -1).join(', ')} or ${list[list.length - 1]}` : list[0]);
 
 // Returns { base, nodeId, pathMode } where base is the workbook URL (keeping any /tag/
 // or /edit segment) and nodeId is the page or element the link pointed at,
 // from either a :nodeId parameter or a /page/ or /element/ path (pathMode).
 export function parseSigmaUrl(raw) {
-  const orgs = envList('SIGMA_ORG');
+  const orgs = [...new Set(envList('SIGMA_ORG').map(orgSlug))];
   const hosts = envList('SIGMA_APP_HOST').map((h) => h.replace(/^https?:\/\//, '').toLowerCase());
   if (!hosts.length) hosts.push(...DEFAULT_APP_HOSTS);
   let u;
   try { u = new URL(String(raw).trim()); } catch { throw new Error('Workbook URL is not a valid URL'); }
   if (u.protocol !== 'https:' || !hosts.includes(u.host)) throw new Error(`Workbook URL must be on ${orText(hosts.map((h) => `https://${h}`))}`);
-  if (orgs.length && !orgs.some((org) => u.pathname.startsWith(`/${org}/`))) throw new Error(`Workbook URL must belong to the ${orText(orgs)} org`);
+  if (orgs.length && !orgs.some((org) => u.pathname.toLowerCase().startsWith(`/${org}/`))) throw new Error(`Workbook URL must belong to the ${orText(orgs)} org`);
 
   const m = u.pathname.replace(/\/+$/, '').match(/^(\/[^/]+\/(?:workbook|report)\/[^/]+(?:\/tag\/[^/]+)?(?:\/edit)?)(?:\/(page|element)\/([^/]+))?$/);
   if (!m) throw new Error('URL must point at a Sigma workbook, page or element');

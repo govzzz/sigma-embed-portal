@@ -56,7 +56,8 @@ deploy time.
   in the org your workbook URLs point at (an API client ID won't work, nor
   one that was deleted or rotated). Fix the value and redeploy.
 - **"Workbook URL must belong to the … org"** — `SIGMA_ORG` doesn't match
-  the URL you pasted. It takes a comma-separated list if you need more than one.
+  the URL you pasted. Set it to the bare org slug (`my-org`); a pasted org URL
+  is also accepted. It takes a comma-separated list if you need more than one.
 - **Staging (`staging.sigmacomputing.io`)** — staging URLs are accepted out of
   the box, but the embed credentials must be created in that staging org.
   Production credentials won't sign staging embeds, and vice versa.
